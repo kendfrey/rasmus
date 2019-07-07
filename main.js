@@ -1,16 +1,21 @@
 "use strict";
 
-(async () =>
-{
-
+const Discord = require("discord.js");
 const Rss = require("./rss");
-const rss = new Rss(1);
-await rss.load("feeds.json");
-rss.on("item", onItem);
+const config = require("./config.json");
+
+const rss = new Rss(config.pollInterval);
+rss.load("feeds.json");
+
+const discord = new Discord.Client();
+discord.once("ready", () => rss.on("item", onItem));
+discord.login(config.token);
 
 function onItem(item)
 {
-	console.log(item);
+	const channel = discord.channels.get(item.channel);
+	if (channel)
+	{
+		channel.send(`**${Discord.Util.escapeMarkdown(item.title)}**\n${Discord.Util.escapeMarkdown(item.content)}`);
+	}
 }
-
-})();

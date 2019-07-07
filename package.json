@@ -9,6 +9,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "discord.js": "^11.5.1",
     "rss-parser": "^3.7.2"
   }
 }
