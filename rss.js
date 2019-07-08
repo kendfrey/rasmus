@@ -53,7 +53,7 @@ module.exports = class Rss extends EventEmitter
 		try
 		{
 			const feedData = await parser.parseURL(url);
-			const feed = { url, channel, title: feedData.title, description: feedData.description, last: id(feedData.items[0]) };
+			const feed = { url, channel, title: feedData.title || "No title", description: feedData.description || "No description", last: id(feedData.items[0]) };
 			this.feeds.set(key, feed);
 			await this.save();
 			return feed;
