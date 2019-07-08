@@ -1,4 +1,6 @@
 {
 	"token": "A1B2C3",
-	"pollInterval": 15
+	"pollInterval": 15,
+	"prefix": "~",
+	"admins": ["123456"]
 }
