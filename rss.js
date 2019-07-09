@@ -53,7 +53,7 @@ module.exports = class Rss extends EventEmitter
 		try
 		{
 			const feedData = await parser.parseURL(url);
-			const feed = { url, channel, title: feedData.title || "No title", description: feedData.description || "No description", last: id(feedData.items[0]) };
+			const feed = { url, channel, title: feedData.title || "No title", description: feedData.description || "No description", seen: new Set(feedData.items.map(id)) };
 			this.feeds.set(key, feed);
 			await this.save();
 			return feed;
@@ -104,17 +104,11 @@ module.exports = class Rss extends EventEmitter
 				const startFeed = Date.now();
 				console.log(`Fetching ${feed.url} for ${feed.channel}`);
 				const feedData = await parser.parseURL(feed.url);
-				let lastIndex = feedData.items.findIndex(item => id(item) === feed.last);
-				if (lastIndex < 0)
+				for (const itemData of feedData.items.filter(item => !feed.seen.has(id(item))))
 				{
-					lastIndex = feedData.items.length;
-				}
-				for (let i = lastIndex - 1; i >= 0; i--)
-				{
-					const itemData = feedData.items[i];
 					const item = { url: feed.url, channel: feed.channel, title: itemData.title || "No title", content: itemData.link || itemData.description || "No content" };
 					console.log(`New item: ${id(itemData)}`);
-					feed.last = id(itemData);
+					feed.seen.add(id(itemData));
 					this.emit("item", item);
 				}
 				console.log(`${(Date.now() - startFeed) / 1000}s`);
