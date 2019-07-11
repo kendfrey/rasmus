@@ -25,30 +25,44 @@ bot.discord.once("ready", () => bot.rss.on("item", onItem));
 bot.discord.on("message", onMessage);
 bot.discord.login(bot.config.token);
 
-function onItem(item)
+async function onItem(item)
 {
-	const channel = bot.discord.channels.get(item.channel);
-	if (channel)
+	try
 	{
-		channel.send(`**${Discord.Util.escapeMarkdown(item.title)}**\n${Discord.Util.escapeMarkdown(item.content)}`);
+		const channel = bot.discord.channels.get(item.channel);
+		if (channel)
+		{
+			await channel.send(`**${Discord.Util.escapeMarkdown(item.title)}**\n${Discord.Util.escapeMarkdown(item.content)}`);
+		}
+	}
+	catch (err)
+	{
+		console.error(`Error sending message for ${item.content} to ${item.channel}: ${err}`);
 	}
 }
 
-function onMessage(message)
+async function onMessage(message)
 {
 	if (message.content.startsWith(bot.config.prefix))
 	{
-		const [commandName, ...args] = message.content.substr(bot.config.prefix.length).split(" ");
-		const command = bot.commands.get(commandName);
-		if (command)
+		try
 		{
-			if (command.admin && !bot.config.admins.includes(message.author.id))
+			const [commandName, ...args] = message.content.substr(bot.config.prefix.length).split(" ");
+			const command = bot.commands.get(commandName);
+			if (command)
 			{
-				message.channel.send("You do not have permission to use this command.");
-				return;
-			}
+				if (command.admin && !bot.config.admins.includes(message.author.id))
+				{
+					await message.channel.send("You do not have permission to use this command.");
+					return;
+				}
 
-			command.invoke(args, message, bot);
+				await command.invoke(args, message, bot);
+			}
+		}
+		catch (err)
+		{
+			console.error(`Error processing command from ${message.channel}: ${err}`);
 		}
 	}
 }

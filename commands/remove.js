@@ -11,22 +11,22 @@ module.exports =
 	{
 		if (args.length < 1)
 		{
-			bot.commands.get("help").invoke(["remove"], message, bot);
+			await bot.commands.get("help").invoke(["remove"], message, bot);
 			return;
 		}
 
 		const result = await bot.rss.remove(args[0], message.channel.id);
 		if (!result)
 		{
-			message.channel.send("That feed does not exist.");
+			await message.channel.send("That feed does not exist.");
 		}
 		else if (result instanceof Error)
 		{
-			message.channel.send("There was an error removing the feed.");
+			await message.channel.send("There was an error removing the feed.");
 		}
 		else
 		{
-			message.channel.send(`Feed removed: **${Discord.Util.escapeMarkdown(result.title)}**`);
+			await message.channel.send(`Feed removed: **${Discord.Util.escapeMarkdown(result.title)}**`);
 		}
 	}
 };

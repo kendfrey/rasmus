@@ -11,22 +11,22 @@ module.exports =
 	{
 		if (args.length < 1)
 		{
-			bot.commands.get("help").invoke(["add"], message, bot);
+			await bot.commands.get("help").invoke(["add"], message, bot);
 			return;
 		}
 
 		const result = await bot.rss.add(args[0], message.channel.id);
 		if (!result)
 		{
-			message.channel.send("That feed already exists.");
+			await message.channel.send("That feed already exists.");
 		}
 		else if (result instanceof Error)
 		{
-			message.channel.send("There was an error adding the feed.");
+			await message.channel.send("There was an error adding the feed.");
 		}
 		else
 		{
-			message.channel.send(`Feed added: **${Discord.Util.escapeMarkdown(result.title)}**`);
+			await message.channel.send(`Feed added: **${Discord.Util.escapeMarkdown(result.title)}**`);
 		}
 	}
 };
