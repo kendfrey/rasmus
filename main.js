@@ -32,7 +32,12 @@ async function onItem(item)
 		const channel = bot.discord.channels.get(item.channel);
 		if (channel)
 		{
-			await channel.send(`**${Discord.Util.escapeMarkdown(item.title)}**\n${Discord.Util.escapeMarkdown(item.content)}`);
+			let content = item.content;
+			if (!content.toLowerCase().startsWith("http")) // Discord replaces \ with / in links, so escaping them is bad.
+			{
+				content = Discord.Util.escapeMarkdown(content);
+			}
+			await channel.send(`**${Discord.Util.escapeMarkdown(item.title)}**\n${content}`);
 		}
 	}
 	catch (err)
