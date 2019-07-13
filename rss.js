@@ -71,7 +71,7 @@ module.exports = class Rss extends EventEmitter
 		}
 		catch (err)
 		{
-			console.log(`Error initializing ${url}: ${err}`);
+			console.error(`Error initializing ${url}: ${err}`);
 			return false;
 		}
 	}
