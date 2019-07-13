@@ -20,10 +20,6 @@ module.exports =
 		{
 			await message.channel.send("That feed does not exist.");
 		}
-		else if (result instanceof Error)
-		{
-			await message.channel.send("There was an error removing the feed.");
-		}
 		else
 		{
 			await message.channel.send(`Feed removed: **${Discord.Util.escapeMarkdown(result.title)}**`);

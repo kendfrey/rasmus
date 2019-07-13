@@ -7,6 +7,7 @@ const parser = new RssParser();
 
 module.exports = class Rss extends EventEmitter
 {
+	feedSubscriptions = new Map();
 	feeds = new Map();
 
 	constructor(pollInterval)
@@ -25,72 +26,80 @@ module.exports = class Rss extends EventEmitter
 			{
 				await this.add(feed.url, feed.channel);
 			}
-			this.feedsFile = file;
 		}
 		catch (err)
 		{
 			// Make sure the file doesn't get overwritten if it already exists and is broken.
-			if (err.code === "ENOENT")
-			{
-				this.feedsFile = file;
-			}
-			else
+			if (err.code !== "ENOENT")
 			{
 				throw err;
 			}
 		}
+		this.feedsFile = file;
 	}
 
 	async add(url, channel)
 	{
 		const key = `${url};${channel}`;
-		if (this.feeds.has(key))
+		if (this.feedSubscriptions.has(key))
 		{
 			return null;
 		}
 		console.log(`Adding ${url} to ${channel}`);
 
+		this.feedSubscriptions.set(key, { url, channel });
+		await this.save();
+
+		if (!this.feeds.has(url) && !await this.initializeFeed(url))
+		{
+			const unknown = { url, title: "Unknown", description: "Unknown", initialized: false };
+			this.feeds.set(url, unknown);
+		}
+
+		return this.feeds.get(url);
+	}
+
+	async initializeFeed(url)
+	{
 		try
 		{
+			console.log(`Initializing ${url}`);
 			const feedData = await parser.parseURL(url);
-			const feed = { url, channel, title: feedData.title || "No title", description: feedData.description || "No description", seen: new Set(feedData.items.map(id)) };
-			this.feeds.set(key, feed);
-			await this.save();
-			return feed;
+			const feed = { url, title: feedData.title || "No title", description: feedData.description || "No description", seen: new Set(feedData.items.map(id)), initialized: true };
+			this.feeds.set(url, feed);
+			return true;
 		}
 		catch (err)
 		{
-			console.error(`Error adding ${url} to ${channel}: ${err}`);
-			return err;
+			console.log(`Error initializing ${url}: ${err}`);
+			return false;
 		}
 	}
 
 	async remove(url, channel)
 	{
 		const key = `${url};${channel}`;
-		if (!this.feeds.has(key))
+		if (!this.feedSubscriptions.has(key))
 		{
 			return null;
 		}
 		console.log(`Removing ${url} from ${channel}`);
 
-		try
+		this.feedSubscriptions.delete(key);
+		await this.save();
+
+		const feed = this.feeds.get(url);
+		if (![...this.feedSubscriptions.values()].some(f => f.url === url))
 		{
-			const feed = this.feeds.get(key);
-			this.feeds.delete(key);
-			await this.save();
-			return feed;
+			this.feeds.delete(url);
 		}
-		catch (err)
-		{
-			console.error(`Error removing ${url} from ${channel}: ${err}`);
-			return err;
-		}
+
+		return feed;
 	}
 
 	list(channel)
 	{
-		return [...this.feeds.values()].filter(f => f.channel === channel);
+		return [...this.feedSubscriptions.values()].filter(f => f.channel === channel).map(f => this.feeds.get(f.url));
 	}
 
 	async poll()
@@ -101,21 +110,31 @@ module.exports = class Rss extends EventEmitter
 		{
 			try
 			{
+				if (!feed.initialized)
+				{
+					await this.initializeFeed(feed.url);
+					continue;
+				}
+
 				const startFeed = Date.now();
-				console.log(`Fetching ${feed.url} for ${feed.channel}`);
+				console.log(`Fetching ${feed.url}`);
 				const feedData = await parser.parseURL(feed.url);
 				for (const itemData of feedData.items.filter(item => !feed.seen.has(id(item))))
 				{
-					const item = { url: feed.url, channel: feed.channel, title: itemData.title || "No title", content: itemData.link || itemData.description || "No content" };
+					const item = { title: itemData.title || "No title", content: itemData.link || itemData.description || "No content" };
 					console.log(`New item: ${id(itemData)}`);
 					feed.seen.add(id(itemData));
-					this.emit("item", item);
+
+					for (const subscription of [...this.feedSubscriptions.values()].filter(f => f.url === feed.url))
+					{
+						this.emit("item", { channel: subscription.channel, ...item });
+					}
 				}
 				console.log(`${(Date.now() - startFeed) / 1000}s`);
 			}
 			catch (err)
 			{
-				console.error(`Error fetching ${feed.url} for ${feed.channel}: ${err}`);
+				console.error(`Error fetching ${feed.url}: ${err}`);
 			}
 		}
 		console.log(`Done ${(Date.now() - startPoll) / 1000}s`);
@@ -126,7 +145,7 @@ module.exports = class Rss extends EventEmitter
 	{
 		if (this.feedsFile)
 		{
-			await fs.writeFile(this.feedsFile, JSON.stringify([...this.feeds.values()].map(f => ({ url: f.url, channel: f.channel })), null, 2));
+			await fs.writeFile(this.feedsFile, JSON.stringify([...this.feedSubscriptions.values()], null, "\t"));
 		}
 	}
 }

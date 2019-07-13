@@ -9,6 +9,11 @@ module.exports =
 	admin: false,
 	invoke: async (args, message, bot) =>
 	{
-		await message.channel.send(bot.rss.list(message.channel.id).map(f => `**${Discord.Util.escapeMarkdown(f.title)}**\n<${f.url}>\n${Discord.Util.escapeMarkdown(f.description)}`).join("\n\n"));
+		let messageText = bot.rss.list(message.channel.id).map(f => `**${Discord.Util.escapeMarkdown(f.title)}**\n<${f.url}>\n${Discord.Util.escapeMarkdown(f.description)}`).join("\n\n");
+		if (messageText === "")
+		{
+			messageText = "There are no feeds in this channel.";
+		}
+		await message.channel.send(messageText);
 	}
 };

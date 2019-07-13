@@ -20,10 +20,6 @@ module.exports =
 		{
 			await message.channel.send("That feed already exists.");
 		}
-		else if (result instanceof Error)
-		{
-			await message.channel.send("There was an error adding the feed.");
-		}
 		else
 		{
 			await message.channel.send(`Feed added: **${Discord.Util.escapeMarkdown(result.title)}**`);
