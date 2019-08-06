@@ -23,6 +23,7 @@ bot.rss = new Rss(bot.config.pollInterval);
 bot.rss.load("feeds.json");
 
 bot.discord = new Discord.Client();
+bot.discord.on("error", err => console.error(`Error: ${err.error}`));
 bot.discord.once("ready", () => bot.rss.on("item", onItem));
 bot.discord.on("message", onMessage);
 bot.discord.login(bot.config.token);
