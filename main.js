@@ -3,6 +3,8 @@
 const Discord = require("discord.js");
 const Rss = require("./rss");
 
+process.on('unhandledRejection', err => { throw err; });
+
 const bot = {};
 bot.config = require("./config.json");
 
