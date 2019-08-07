@@ -11,6 +11,7 @@ bot.config = require("./config.json");
 bot.commands = new Map();
 addCommand(require("./commands/add"));
 addCommand(require("./commands/help"));
+addCommand(require("./commands/latest"));
 addCommand(require("./commands/list"));
 addCommand(require("./commands/remove"));
 

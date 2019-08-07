@@ -65,7 +65,15 @@ module.exports = class Rss extends EventEmitter
 		{
 			console.log(`Initializing ${url}`);
 			const feedData = await parser.parseURL(url);
-			const feed = { url, title: feedData.title || "No title", description: feedData.description || "No description", seen: new Set(feedData.items.map(id)), initialized: true };
+			const feed =
+			{
+				url,
+				title: feedData.title || "No title",
+				description: feedData.description || "No description",
+				seen: new Set(feedData.items.map(id)),
+				latest: post(feedData.items[0]),
+				initialized: true
+			};
 			this.feeds.set(url, feed);
 			return true;
 		}
@@ -102,6 +110,29 @@ module.exports = class Rss extends EventEmitter
 		return [...this.feedSubscriptions.values()].filter(f => f.channel === channel).map(f => this.feeds.get(f.url));
 	}
 
+	postLatest(url, channel)
+	{
+		let subscription;
+		if (url)
+		{
+			subscription = this.feedSubscriptions.get(`${url};${channel}`);
+		}
+		else
+		{
+			subscription = [...this.feedSubscriptions.values()].filter(f => f.channel === channel)[0];
+		}
+		if (subscription)
+		{
+			const feed = this.feeds.get(subscription.url);
+			if (feed.latest)
+			{
+				this.emit("item", { channel: subscription.channel, ...feed.latest });
+				return true;
+			}
+		}
+		return false;
+	}
+
 	async poll()
 	{
 		const startPoll = Date.now();
@@ -119,17 +150,17 @@ module.exports = class Rss extends EventEmitter
 				const startFeed = Date.now();
 				console.log(`Fetching ${feed.url}`);
 				const feedData = await parser.parseURL(feed.url);
-				for (const itemData of feedData.items.filter(item => !feed.seen.has(id(item))))
+				for (const item of feedData.items.filter(item => !feed.seen.has(id(item))))
 				{
-					const item = { title: itemData.title || "No title", content: itemData.link || itemData.description || "No content" };
-					console.log(`New item: ${id(itemData)}`);
-					feed.seen.add(id(itemData));
+					console.log(`New item: ${id(item)}`);
+					feed.seen.add(id(item));
 
 					for (const subscription of [...this.feedSubscriptions.values()].filter(f => f.url === feed.url))
 					{
-						this.emit("item", { channel: subscription.channel, ...item });
+						this.emit("item", { channel: subscription.channel, ...post(item) });
 					}
 				}
+				feed.latest = post(feedData.items[0]);
 				console.log(`${(Date.now() - startFeed) / 1000}s`);
 			}
 			catch (err)
@@ -153,4 +184,13 @@ module.exports = class Rss extends EventEmitter
 function id(item)
 {
 	return item.guid || item.pubDate || item.link || item.title || item.description;
+}
+
+function post(item)
+{
+	if (!item)
+	{
+		return undefined;
+	}
+	return { title: item.title || "No title", content: item.link || item.description || "No content" };
 }
