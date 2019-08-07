@@ -9,14 +9,15 @@ const bot = {};
 bot.config = require("./config.json");
 
 bot.commands = new Map();
-addCommand(require("./commands/add"));
-addCommand(require("./commands/help"));
-addCommand(require("./commands/latest"));
-addCommand(require("./commands/list"));
-addCommand(require("./commands/remove"));
+addCommand("add");
+addCommand("help");
+addCommand("latest");
+addCommand("list");
+addCommand("remove");
 
-function addCommand(command)
+function addCommand(name)
 {
+	const command = require(`./commands/${name}`);
 	bot.commands.set(command.name, command);
 }
 
