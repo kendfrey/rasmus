@@ -34,7 +34,7 @@ async function onItem(item)
 {
 	try
 	{
-		const channel = bot.discord.channels.get(item.channel);
+		const channel = await bot.discord.channels.fetch(item.channel);
 		if (channel)
 		{
 			let content = item.content;
